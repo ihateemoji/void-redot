@@ -57,6 +57,8 @@ make_build_args+=" arch=$arch"
 pre_build() {
 	export CXXFLAGS=" $CXXFLAGS "
 	export BUILD_NAME="voidlinux"
+	# Ensure the resource-limits library is linked
+	export LDFLAGS="$LDFLAGS -lglslang-default-resource-limits"
 }
 
 # post_patch() {
