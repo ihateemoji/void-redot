@@ -41,10 +41,3 @@ ln -s /usr/lib/redot/export_templates $HOME/.local/share/redot/export_templates/
 ```
 
 (See `srcpkgs/redot/README.voidlinux` for details.)
-
-## Notes
-
-- Based on the official `godot` template in void-packages, adapted for Redot 26.3.
-- Builds the editor and Linux export templates using system libraries where possible.
-- May require minor fixes after first build (binary names, musl, etc.).
-- Maintainer field in the template is a placeholder — update it before submitting upstream.
