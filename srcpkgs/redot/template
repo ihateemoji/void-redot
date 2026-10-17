@@ -1,0 +1,135 @@
+# Template file for 'redot'
+pkgname=redot
+version=26.3
+revision=1
+archs="x86_64* i686* aarch64* armv7* ppc64*"
+build_style=scons
+make_build_args="engine_update_check=false builtin_brotli=false builtin_enet=false
+ builtin_freetype=false builtin_glslang=false builtin_graphite=false builtin_harfbuzz=false
+ builtin_icu4c=false builtin_libogg=false builtin_libpng=false builtin_libtheora=false
+ builtin_libvorbis=false builtin_libwebp=false builtin_mbedtls=false builtin_miniupnpc=false
+ builtin_pcre2=false builtin_zlib=false builtin_zstd=false lto=auto platform=linuxbsd
+ production=yes progress=no wayland=yes x11=yes tests=yes"
+hostmakedepends="pkg-config clang gettext wayland-devel"
+makedepends="alsa-lib-devel brotli-devel freetype-devel glslang-devel glu-devel graphite-devel
+ harfbuzz-devel icu-devel libenet-devel libogg-devel libpng-devel libtheora-devel libvorbis-devel
+ libwebp-devel libX11-devel libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
+ libXrender-devel libzstd-devel mbedtls2-devel mesa miniupnpc-devel pcre2-devel pulseaudio-devel
+ speech-dispatcher-devel wayland-devel zlib-devel"
+depends="speech-dispatcher"
+short_desc="Multiplatform 2D and 3D engine (Godot fork)"
+maintainer="ihateemoji <ihateemoji.dev@gmail.com>"
+license="MIT"
+homepage="https://redotengine.org/"
+distfiles="https://github.com/Redot-Engine/redot-engine/archive/refs/tags/redot-${version}-stable.tar.gz"
+checksum=9e626ceb16c26a07acf6d07bf57ccccc73fe6c4114dbc7bb1a46c2323814d2c7
+wrksrc="redot-engine-redot-${version}-stable"
+# nocross=... # add if needed after testing
+
+CFLAGS+=" -fPIE -fPIC"
+LDFLAGS+=" -pie"
+
+if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
+	makedepends+=" libexecinfo-devel"
+	depends+=" libexecinfo"
+fi
+
+case "$XBPS_TARGET_MACHINE" in
+	i686*) arch="x86_32"; make_build_args="${make_build_args/lto=auto/lto=none}" ;;
+	x86_64*) arch="x86_64" ;;
+	aarch64*) arch="arm64" ;;
+	armv7*) arch="arm32" ;;
+	ppc64*) arch="ppc64" ;;
+esac
+
+case "$XBPS_TARGET_MACHINE" in
+	x86_64*|aarch64*)
+		make_build_args+=" builtin_embree=false"
+		makedepends+=" embree-devel"
+		;;
+	*)
+		make_build_args+=" builtin_embree=true"
+		;;
+esac
+
+make_build_args+=" arch=$arch"
+
+pre_build() {
+	export CXXFLAGS=" $CXXFLAGS "
+	export BUILD_NAME="voidlinux"
+}
+
+# post_patch() {
+# 	# Adjust if needed for desktop/mime files
+# 	# vsed -i misc/dist/linux/org.redotengine.Redot.xml -e 's/name="x/name="application-x/g'
+# }
+
+do_build() {
+	# Build editor
+	scons ${makejobs} target=editor ${make_build_args}
+
+	# Build export templates
+	echo -e "\n\n\nBuilding export templates\n\n\n"
+	scons ${makejobs} target=template_release ${make_build_args}
+	echo -e "\n\n\nBuilding export templates DEBUG\n\n\n"
+	scons ${makejobs} target=template_debug ${make_build_args}
+}
+
+do_check() {
+	# Run tests using the built editor
+	scons ${makejobs} target=editor ${make_build_args} tests=yes
+}
+
+do_install() {
+	vlicense LICENSE.txt
+
+	vinstall misc/dist/linux/org.redotengine.Redot.desktop 644 usr/share/applications/
+	vinstall icon.png 644 usr/share/pixmaps/ redot.png
+
+	case "$XBPS_TARGET_MACHINE" in
+		x86_64*) vbin bin/redot.linuxbsd.editor.x86_64 redot;;
+		i686*) vbin bin/redot.linuxbsd.editor.x86_32 redot;;
+		aarch64*) vbin bin/redot.linuxbsd.editor.arm64 redot;;
+		armv7*) vbin bin/redot.linuxbsd.editor.arm32 redot;;
+		ppc64*) vbin bin/redot.linuxbsd.editor.ppc64 redot;;
+	esac
+
+	vinstall misc/dist/linux/org.redotengine.Redot.xml 644 usr/share/mime/packages/
+	vman misc/dist/linux/redot.6
+
+	# Install for export-templates sub-package
+	local templatesDir="/usr/lib/redot/export_templates/${version}.stable"
+	vmkdir "${templatesDir}"
+
+	case "$XBPS_TARGET_MACHINE" in
+		x86_64*)
+			vinstall bin/redot.linuxbsd.template_release.x86_64 755 "${templatesDir}" linux_release.x86_64
+			vinstall bin/redot.linuxbsd.template_debug.x86_64 755 "${templatesDir}" linux_debug.x86_64
+			;;
+		i686*)
+			vinstall bin/redot.linuxbsd.template_release.x86_32 755 "${templatesDir}" linux_release.x86_32
+			vinstall bin/redot.linuxbsd.template_debug.x86_32 755 "${templatesDir}" linux_debug.x86_32
+			;;
+		aarch64*)
+			vinstall bin/redot.linuxbsd.template_release.arm64 755 "${templatesDir}" linux_release.arm64
+			vinstall bin/redot.linuxbsd.template_debug.arm64 755 "${templatesDir}" linux_debug.arm64
+			;;
+		armv7*)
+			vinstall bin/redot.linuxbsd.template_release.arm32 755 "${templatesDir}" linux_release.arm32
+			vinstall bin/redot.linuxbsd.template_debug.arm32 755 "${templatesDir}" linux_debug.arm32
+			;;
+		ppc64*)
+			vinstall bin/redot.linuxbsd.template_release.ppc64 755 "${templatesDir}" linux_release.ppc64
+			vinstall bin/redot.linuxbsd.template_debug.ppc64 755 "${templatesDir}" linux_debug.ppc64
+			;;
+	esac
+}
+
+redot-export-templates_package() {
+	short_desc+=" - export templates"
+	depends="${sourcepkg}>=${version}_${revision}"
+
+	pkg_install() {
+		vmove usr/lib/redot/export_templates
+	}
+}
