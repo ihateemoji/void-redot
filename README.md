@@ -11,7 +11,7 @@ Redot is a community-driven fork of the Godot Engine.
 Clone this repository:
 
 ```sh
-git clone https://github.com/YOURUSER/void-redot.git
+git clone git@github.com:ihateemoji/void-redot.git
 ```
 
 Copy the package directory into the `srcpkgs` directory of your Void Packages repository:
